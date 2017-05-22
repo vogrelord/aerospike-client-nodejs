@@ -22,6 +22,7 @@ extern "C" {
     #include <aerospike/aerospike.h>
     #include <aerospike/as_async_proto.h>
     #include <aerospike/as_cluster.h>
+    #include <aerospike/as_node.h>
 }
 
 using namespace v8;
@@ -95,6 +96,37 @@ NAN_METHOD(AerospikeClient::HasPendingAsyncCommands)
 	bool pending = as_async_get_pending(client->as->cluster) > 0;
 
 	info.GetReturnValue().Set(Nan::New(pending));
+}
+
+/**
+ * Get all node names in the cluster.
+ */
+NAN_METHOD(AerospikeClient::GetNodes)
+{
+	Nan::HandleScope scope;
+	AerospikeClient * client = ObjectWrap::Unwrap<AerospikeClient>(info.This());
+
+	int n_nodes;
+	char* node_names;
+	as_cluster_get_node_names(client->as->cluster, &n_nodes, &node_names);
+
+	Local<Array> nodes = Nan::New<Array>(n_nodes);
+	char* nptr = node_names;
+	for (uint32_t i = 0; i < (uint32_t)n_nodes; i++) {
+		as_node* node = as_node_get_by_name(client->as->cluster, nptr);
+		if (node) {
+			Local<Object> node_obj = Nan::New<Object>();
+			node_obj->Set(Nan::New("name").ToLocalChecked(),
+					Nan::New<String>(nptr).ToLocalChecked());
+			node_obj->Set(Nan::New("address").ToLocalChecked(),
+					Nan::New<String>(as_node_get_address_string(node))
+					.ToLocalChecked());
+			nodes->Set(i, node_obj);
+		}
+		nptr += AS_NODE_NAME_SIZE;
+	}
+
+	info.GetReturnValue().Set(nodes);
 }
 
 /**

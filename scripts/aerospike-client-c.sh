@@ -77,7 +77,7 @@ download() {
   artifact=$1
   version=$2
 
-  url="https://artifacts.aerospike.com/aerospike-client-c/${version}/${artifact}"
+  url="http://artifacts.aerospike.com/aerospike-client-c/${version}/${artifact}"
   printf "info: downloading '%s' to '%s'\n" "${url}" "${artifact}"
 
   if has_cmd curl; then
